@@ -83,6 +83,8 @@ def index():
 @app.route('/home')
 @token_required
 def home(data):
+    if data.get('user')=='Admin':
+        return render_template('index.html',**{'LOGIN':'ADMIN'})
     print(data)
     connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
     cursor = connection.cursor()
@@ -95,8 +97,29 @@ def home(data):
 @app.route('/Dashboard')
 @token_required
 def dashboard(data):
+    if data.get('user')=='Admin':
+        return render_template('adminDashboard.html')
     dashdata = getDashData(data.get('user'))
     return render_template('userDashboard.html',**dashdata)
+
+@app.route('/userinfo',methods=['GET','POST'])
+@token_required
+def getuserInfo(data):
+    if request.method=='POST':
+        data = request.form
+        name = data['name']
+        flat = data['flat']
+        connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
+        cursor = connection.cursor()
+        cursor.execute("select Email from rfiduserdata where name=%s and flat_no=%s",(name,flat))
+        loginid=cursor.fetchall()
+        if len(loginid)<1:
+            return render_template('adminDashboard.html')
+        print(loginid)
+        cursor.execute("select SR_NO,Date,Time,Inout_Status from userinout where Email=%s",(loginid))
+        data3 = cursor.fetchall()
+        return render_template('adminDashboard.html',**{'value':data3,'name':name,'flat':flat})
+    return render_template('adminDashboard.html')
 
 
 # Home and Login Page: The first Route
@@ -123,6 +146,19 @@ def login():
             response.set_cookie('sites',token)
             return response
         else:
+            connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
+            cursor = connection.cursor()
+            cursor.execute("select name, pass from admin where name=%s and pass=%s",(loginid,password))
+            data = cursor.fetchall()
+            if (len(data)==1):
+                token = jwt.encode(
+                    {
+                        'user': loginid,
+                        'expiration': str(datetime.utcnow() + timedelta(seconds=60))
+                    }, app.config['SECRET_KEY'])
+                response = make_response(render_template('adminDashboard.html'))
+                response.set_cookie('sites',token)
+                return response
             return redirect(url_for('index'))
 
 
