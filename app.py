@@ -32,9 +32,9 @@ def getDashData(loginid):
     cursor.execute("select * from rfiduserdata where Email=%s",(loginid))
     data = cursor.fetchall()
     Name=data[0][1]
-    cursor.execute("select EntryCount,ExitCount from inoutcount where Email=%s",(loginid))
+    cursor.execute("select EntryCount,ExitCount,latest_temp from inoutcount where Email=%s",(loginid))
     data2 = cursor.fetchall()
-    cursor.execute("select SR_NO,Date,Time,Inout_Status from userinout where Email=%s",(loginid))
+    cursor.execute("select SR_NO,Date,Time,Inout_Status,temp from userinout where Email=%s",(loginid))
     data3 = cursor.fetchall()
     cursor.execute("select Name,Sname from rfiduserdata where flat_no=%s",(data[0][6]))
     data4 = cursor.fetchall()
@@ -52,6 +52,7 @@ def getDashData(loginid):
         'flineworker':data[0][11],
         'incount':data2[0][0],
         'outcount':data2[0][1],
+        'temp':data2[0][2],
         'value': data3,
         'profileaddress':profadd,
         'certaddress':certadd
@@ -116,7 +117,7 @@ def getuserInfo(data):
         if len(loginid)<1:
             return render_template('adminDashboard.html')
         print(loginid)
-        cursor.execute("select SR_NO,Date,Time,Inout_Status from userinout where Email=%s",(loginid))
+        cursor.execute("select SR_NO,Date,Time,Inout_Status,temp from userinout where Email=%s",(loginid))
         data3 = cursor.fetchall()
         return render_template('adminDashboard.html',**{'value':data3,'name':name,'flat':flat})
     return render_template('adminDashboard.html')

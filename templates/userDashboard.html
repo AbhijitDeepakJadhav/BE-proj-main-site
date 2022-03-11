@@ -82,6 +82,7 @@
                         <a class="info-label"><i class="fas fa-hospital-user"></i>&nbspFront-Line Worker: &nbsp{{flineworker}}</a>
                         <a class="info-label"><i class="fas fa-outdent"></i>&nbspTotal Entry (in month): &nbsp{{incount}}</a>
                         <a class="info-label"><i class="fas fa-indent"></i>&nbspTotal Exit (in month): &nbsp{{outcount}}</li>
+                        <a class="info-label"><i class="fas fa-thermometer-half"></i>&nbspTotal Latest temperature: &nbsp{{temp}}*C</li>
                         <a class="edit"></a>
                       </div>
                 </ul>
@@ -117,6 +118,7 @@
                                     <th class="table-heading">Date</th>
                                     <th class="table-heading">Time</th>
                                     <th class="table-heading">Status</th>
+                                    <th class="table-heading">Temperature</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -126,6 +128,7 @@
                                     <td>{{row[1]}}</td>
                                     <td>{{row[2]}}</td>
                                     <td>{{row[3]}}</td>
+                                    <td>{{row[4]}}*C</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
