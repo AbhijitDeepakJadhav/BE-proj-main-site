@@ -58,3 +58,50 @@
         width: 30vh;
     }
 }
+
+.sub-btn{
+    width: 11vh;
+    height: 5vh;
+    margin-right: 2vh;
+    font-weight: 700;
+    font-size: 2vh;
+    background-color: darkcyan;
+    /* border-left: 1px solid grey; */
+    border-radius: 21px;
+    border: none;
+    cursor: pointer;
+}
+
+.mail{
+    width: max-content;
+    border: none;
+    background-color: orange;
+    height: 4vh;
+    border-radius: 18px;
+    outline: none;
+    cursor: default;
+    font-weight: bold;
+}
+
+.flatno{
+    width: max-content;
+    border: none;
+    background-color: red;
+    height: 4vh;
+    border-radius: 18px;
+    text-align: center;
+    width: 34%;
+    outline: none;
+    cursor: default;
+    font-weight: bold;
+}
+
+/* .dashboard{
+    justify-content: center;
+} */
+
+.txtinpt{
+    width: 100%;
+    border: none;
+    font-weight: bold;
+}

@@ -15,12 +15,11 @@
 <body>
     <div class="sidemenubar" id="sidebar">
         <!-- <button id="slidin" onclick="close_menu()">&#9776</button> -->
-            <a href="/home">HOME</a>
-            <a href="index.html#gallery">ABOUT US</a>
-            <a href="index.html#infrastructure">INFRASTRUCTURE</a>
-            <a href="index.html#vaccination">VACCINATION</a>
-            <a href="index.html#contactus">CONTACT US</a>
-            <a href="/logout">LOGOUT</a>
+        <a href="/home">HOME</a>
+        <a href="/inoutRecord" style="background-color:rgb(88, 88, 88);" >In-out record</a>
+        <a href="/members">All Members</a>
+        <a href="/vaccinations">VACCINATION</a>
+        <a href="/logout">LOGOUT</a>
     </div>
 
     <nav class="both"id="navbar-dash">
@@ -33,12 +32,10 @@
 
         <div class="dashboard">
             <div class="members pallets">
-                <h5 class="head"><i class="fas fa-users"></i>&nbspSearch Society Members: </h5>
+                <h5 class="head"><i class="fas fa-users"></i>&nbspSearch By Date: </h5>
                 <br>
-                <form action="/userinfo" method="post" class="search-form">
-                    <br><input type="text" name="name"  placeholder="Enter Name"  value={{name}}  >
-                     &nbsp; 
-                     <input type="text" name="flat"  placeholder="Enter Flat no."  value={{flat}}>
+                <form action="/recordByDate" method="post" class="search-form">
+                    <br><input type="date" name="date" >
                      &nbsp;
                      <button type="submit">Get Data</button>
                     <br>
@@ -53,6 +50,7 @@
                         <thead>
                             <tr>
                                 <!-- <th class="table-heading">Sr.No.</th> -->
+                                <th class="table-heading">Email</th>
                                 <th class="table-heading">Date</th>
                                 <th class="table-heading">Time</th>
                                 <th class="table-heading">Status</th>
@@ -60,9 +58,10 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for row in value %}
+                            {% for row in record %}
                             <tr>
                                 <!-- <td>{{row[0]}}</td> -->
+                                <td>{{row[0]}}</td>
                                 <td>{{row[1]}}</td>
                                 <td>{{row[2]}}</td>
                                 <td>{{row[3]}}</td>

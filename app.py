@@ -99,28 +99,59 @@ def home(data):
 @token_required
 def dashboard(data):
     if data.get('user')=='Admin':
-        return render_template('adminDashboard.html')
+        return redirect(url_for('sendmembers'))
     dashdata = getDashData(data.get('user'))
     return render_template('userDashboard.html',**dashdata)
+
+# @app.route('/userinfo',methods=['GET','POST'])
+# @token_required
+# def getuserInfo(data):
+#     if request.method=='POST':
+#         data = request.form
+#         name = data['email']
+#         flat = data['flat']
+#         connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
+#         cursor = connection.cursor()
+#         cursor.execute("select Email from rfiduserdata where email=%s and flat_no=%s",(name,flat))
+#         loginid=cursor.fetchall()
+#         if len(loginid)<1:
+#             return render_template('adminDashboard.html')
+#         print(loginid)
+#         cursor.execute("select SR_NO,Date,Time,Inout_Status,temp from userinout where Email=%s",(loginid))
+#         data3 = cursor.fetchall()
+#         return render_template('adminDashboard.html',**{'value':data3,'name':name,'flat':flat})
+#     return render_template('adminDashboard.html')
+
 
 @app.route('/userinfo',methods=['GET','POST'])
 @token_required
 def getuserInfo(data):
     if request.method=='POST':
         data = request.form
-        name = data['name']
-        flat = data['flat']
-        connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
-        cursor = connection.cursor()
-        cursor.execute("select Email from rfiduserdata where name=%s and flat_no=%s",(name,flat))
-        loginid=cursor.fetchall()
-        if len(loginid)<1:
-            return render_template('adminDashboard.html')
-        print(loginid)
-        cursor.execute("select SR_NO,Date,Time,Inout_Status,temp from userinout where Email=%s",(loginid))
-        data3 = cursor.fetchall()
-        return render_template('adminDashboard.html',**{'value':data3,'name':name,'flat':flat})
-    return render_template('adminDashboard.html')
+        email = data['email']
+        dashdata = getDashData(email)
+        return render_template('memberinfo.html',**dashdata)
+
+@app.route('/vaccStatus',methods=['GET','POST'])
+@token_required
+def vaccStatus(data):
+    if request.method=='POST':
+        formdata = request.form
+        status = formdata['approve']
+        Email = formdata['Email']
+        print(Email)
+        print(status)
+        if status == "yes":
+            connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
+            cursor = connection.cursor()
+            cursor.execute("select Name from rfiduserdata where Email=%s",Email)
+            Name = cursor.fetchall()
+            cursor.execute("update rfiduserdata set vacCertify=%s where Email=%s",("Approved",Email))
+            connection.commit()
+            file = "static/uploads/pdfs/"+Name[0][0]+"toapprove.pdf"
+            newname = "static/uploads/pdfs/"+Name[0][0]+".pdf"
+            os.rename(file,newname)
+        return redirect(url_for('vaccination')) #here
 
 
 # Home and Login Page: The first Route
@@ -157,7 +188,10 @@ def login():
                         'user': loginid,
                         'expiration': str(datetime.utcnow() + timedelta(seconds=60))
                     }, app.config['SECRET_KEY'])
-                response = make_response(render_template('adminDashboard.html'))
+                cursor.execute("select Name,Mname,Sname,Email,flat_no from rfiduserdata order by flat_no")
+                member = cursor.fetchall()
+                print(member)
+                response = make_response(render_template('getMembers.html',**{'members':member}))
                 response.set_cookie('sites',token)
                 return response
             return redirect(url_for('index'))
@@ -186,6 +220,11 @@ def editprof():
             file.save(os.path.join(app.config['addressimg'],filename))
     return render_template('userDashboard.html',**dashdata)
 
+def isthere(filename, search_path):
+   for root, dir, files in os.walk(search_path):
+       if filename in files:
+           return True
+       return False
 
 @app.route('/cert-submitted', methods=['GET','POST'])
 def editcert():
@@ -204,10 +243,71 @@ def editcert():
         Name = cursor.fetchall()
         dashdata = getDashData(data.get('user'))
         if file:
-            file.filename = Name[0][0]+"."+"pdf"
+            fnam = Name[0][0]+"."+"pdf"
+            print(isthere(fnam,app.config['addresspdf']))
+            if isthere(fnam,app.config['addresspdf']):
+                os.remove(os.path.join(app.config['addresspdf'],fnam))
+            file.filename = Name[0][0]+"toapprove"+"."+"pdf"
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['addresspdf'],filename))
+            cursor.execute("update rfiduserdata set vacCertify=%s where Email=%s",("not Approved",data.get('user')))
+            connection.commit()
     return render_template('userDashboard.html',**dashdata)
+
+
+
+#to view all members of society
+@app.route('/members')
+@token_required
+def sendmembers(data):
+    if data.get('user')=='Admin':
+        connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
+        cursor = connection.cursor()
+        cursor.execute("select Name,Mname,Sname,Email,flat_no from rfiduserdata order by flat_no")
+        member = cursor.fetchall()
+        print(member)
+        return render_template('getMembers.html',**{'members':member})
+
+@app.route('/vaccinations')
+@token_required
+def vaccination(data):
+    if data.get('user')=='Admin':
+        connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
+        cursor = connection.cursor()
+        cursor.execute("select Name,Mname,Sname,Email from rfiduserdata where vacCertify=%s order by flat_no",("not Approved"))
+        member = cursor.fetchall()
+        print(member)
+        print(type(member))
+        return render_template('getvacStatus.html',**{'members':member})
+
+@app.route('/inoutRecord')
+@token_required
+def inoutRecord(data):
+    if data.get('user')=='Admin':
+        connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
+        cursor = connection.cursor()
+        cursor.execute("select Email,Date,Time,Inout_Status,temp from userinout")
+        record = cursor.fetchall()
+        return render_template('inoutRecord.html',**{'record':record})
+
+@app.route('/recordByDate',methods=['GET','POST'])
+@token_required
+def recordbyDate(data):
+    if data.get('user')=='Admin':
+        if request.method=='POST':
+            data = request.form
+            date = data['date']
+            print(date)
+            if (len(date)>0):
+                connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
+                cursor = connection.cursor()
+                cursor.execute("select Email,Date,Time,Inout_Status,temp from userinout where Date = %s",date)
+                record = cursor.fetchall()
+                return render_template('inoutRecord.html',**{'record':record})
+            else:
+                return redirect(url_for('inoutRecord'))
+        else:
+            return redirect(url_for('inoutRecord'))
 
 
 @app.route('/logout')

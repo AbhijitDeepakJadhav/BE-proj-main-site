@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADMIN | Society Monitoring System</title>
+    <link rel = "icon" href ="../static/images/logo.jpg" type = "image/x-icon">
+    <link rel="stylesheet" href="../static/css/userDash.css">
+    <link rel="stylesheet" href="../static/css/adminDash.css">
+    <link rel="stylesheet" href="//use.fontawesome.com/releases/v5.0.7/css/all.css">
+    <link rel="stylesheet" href="//use.fontawesome.com/releases/v5.13.0/css/all.css">
+    <link rel="stylesheet" href="//use.fontawesome.com/releases/v5.11.1/css/all.css">
+    <style>
+        .sidemenubar{
+            min-width: 16.5%;
+            /* margin-left: 0; */
+        }
+    </style>
+</head>
+<body>
+    <div class="sidemenubar" id="sidebar">
+        <!-- <button id="slidin" onclick="close_menu()">&#9776</button> -->
+            <a href="/home">HOME</a>
+            <a href="/inoutRecord">In-out record</a>
+            <a href="/members">All Members</a>
+            <a href="/vaccinations" style="background-color:rgb(88, 88, 88);" >VACCINATION</a>
+            <a href="/logout">LOGOUT</a>
+    </div>
+
+    <nav class="both"id="navbar-dash">
+        <button class="slider" id="slider1" onclick="open_menu()"><ul><li id="d0"></li><li id="d1"></li><li></li></ul>&nbspADMIN</button>
+        <button class="slider" id="slider2" onclick="close_menu()" style="display: none;"><ul><li id="c0"></li><li id="c1"></li><li></li></ul>&nbspADMIN</button>
+        <a class="logo" href="/home"><img src="../static/images/logo.jpg"></a>
+    </nav>
+
+    <section class="main both" id="main-sec">
+
+        <div class="dashboard">
+            <table class="people">
+                <thead>
+                    <tr>
+                        <th class="table-heading">Name</th>
+                        <th class="table-heading">Email</th>
+                        <th class="table-heading">View Certificate</th>
+                        <th class="table-heading">Approve</th>
+                        <th class="table-heading">Submit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if members is defined %}
+                        {% for member in members %}
+                        <form action="/vaccStatus" method="post">
+                            <tr>
+                                <td>{{member[0]}}&nbsp{{member[1]}}&nbsp{{member[2]}}&nbsp</td>
+                                <td> <input name="Email" class="txtinpt" type="text" value={{member[3]}} readonly></td>
+                                <!-- <td><center><button type="button"  class="view"><i class="fas fa-eye"></i></button></center></td> -->
+                                <td><center><a href="../static/uploads/pdfs/{{member[0]}}toapprove.pdf" target="blank"><i class="fas fa-eye"></i></a></center></td>
+                                <td> <center><select name="approve" id="aprove">
+                                    <option value="yes">Yes</option>
+                                    <option value="no">No</option>
+                                </select></center></td>
+                                <td> <center><button class="sub-btn" type="submit">Submit</button></center></td>
+                            </tr>
+                        </form>
+                        <br>
+                        {%endfor%}
+                    {% else %}
+                        <h1>No New Updates</h1>
+                    {% endif %}
+                </tbody>
+            </table>
+            
+        </div>
+    </section>
+
+    <script src="../static/js/userdashboard.js"></script>
+    <script>
+        function pop_openAdmin(){
+            pop = document.getElementsByClassName("pop")
+            pop.style.display = "flex";
+            // dropdownmenu.style.display = "none";
+            }
+
+        function pop_close(){
+            popup.style.display = "none";
+            main.style.filter = "blur(0px)";
+            navbar.style.filter="blur(0px)";
+            // dropdownmenu.style.display = "block";
+            document.getElementById('editprofile').style.display = "none";
+            document.getElementById('editcertificate').style.display = "none";
+        }
+    </script>
+</body>
+</html>

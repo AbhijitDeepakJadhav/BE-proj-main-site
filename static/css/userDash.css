@@ -486,6 +486,16 @@ nav ul{
     outline: none;
 }
 
+.close-sign-pop{
+    align-self: flex-end;
+    font-size: 4vh;
+    height: 5vh;
+    width: 5vh;
+    color: black;
+    background-color: black;
+    outline: none;
+}
+
 .fa-times:before {
     content: "\f00d";
     background-color: black;
@@ -607,4 +617,24 @@ nav ul{
     }
 }
 
+@media(min-width:1260px)
+{
+    .sidemenubar{
+        min-width: 16.5%;
+        margin-left: 0;
+    }
+    .inout-table{
+        width: 60%;
+    }
 
+    .members{
+        width: 60%;
+    }
+}
+
+@media(max-width:1675px)
+{
+    .search-form input{
+        width: 90%;
+    }
+}
