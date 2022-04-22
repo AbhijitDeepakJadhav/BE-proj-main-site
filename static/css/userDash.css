@@ -638,3 +638,33 @@ nav ul{
         width: 90%;
     }
 }
+
+.search-form{
+    background-color: transparent;
+    /* border: 2px solid black; */
+    display: flex;
+    flex-direction: row;
+}
+
+.search-form input{
+    width: 90%;
+    outline: none;
+    border: none;
+    background-color: lavender;
+    right: 0;
+    font: message-box;
+    width: 46vh;
+    padding: 4px;
+}
+
+.search-form button{
+    width: 19vh;
+    height: 6vh;
+    margin-right: 2vh;
+    font-weight: 700;
+    font-size: 2vh;
+    background-color: darkcyan;
+    /* border-left: 1px solid grey; */
+    border: none;
+    cursor: pointer;
+}
