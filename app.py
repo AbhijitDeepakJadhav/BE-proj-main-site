@@ -5,8 +5,7 @@ from os.path import join, dirname, realpath
 from werkzeug.utils import secure_filename
 import ps
 import jwt
-from datetime import datetime, timedelta
-from functools import wraps
+import math
 
 
 
@@ -24,6 +23,60 @@ app.config['addresspdf'] = addresspdf
 # profadd="../static/uploads/images/"+Name+"."+"jpg"
 # certadd="../static/uploads/pdfs/"+Name+"."+"pdf"
 
+key = "kladfgwnc"
+
+rand="kldfhjksalieindjjideidindsndjneoiewf"
+    
+def encryptMessage(msg):
+    cipher = ""
+    k_indx = 0
+    msg= msg+rand
+    msg_len = float(len(msg))
+    msg_lst = list(msg)
+    key_lst = sorted(list(key))
+    col = len(key)
+    row = int(math.ceil(msg_len / col)) 
+    fill_null = int((row * col) - msg_len)
+    msg_lst.extend('_' * fill_null)
+    matrix = [msg_lst[i: i + col] 
+              for i in range(0, len(msg_lst), col)]
+    for _ in range(col):
+        curr_idx = key.index(key_lst[k_indx])
+        cipher += ''.join([row[curr_idx] 
+                          for row in matrix])
+        k_indx += 1
+    return cipher
+
+
+def decryptMessage(cipher):
+    msg = ""
+    k_indx = 0
+    msg_indx = 0
+    msg_len = float(len(cipher))
+    msg_lst = list(cipher)
+    col = len(key)
+    row = int(math.ceil(msg_len / col))
+    key_lst = sorted(list(key))
+    dec_cipher = []
+    for _ in range(row):
+        dec_cipher += [[None] * col]
+    for _ in range(col):
+        curr_idx = key.index(key_lst[k_indx])
+  
+        for j in range(row):
+            dec_cipher[j][curr_idx] = msg_lst[msg_indx]
+            msg_indx += 1
+        k_indx += 1
+    try:
+        msg = ''.join(sum(dec_cipher, []))
+    except TypeError:
+        raise TypeError("This program cannot",
+                        "handle repeating words.")
+    null_count = msg.count('_')
+  
+    if null_count > 0:
+        return msg[: -null_count]
+    return msg
 
 #Function to query dashboard data from database
 def getDashData(loginid):
@@ -34,7 +87,7 @@ def getDashData(loginid):
     Name=data[0][1]
     cursor.execute("select EntryCount,ExitCount,latest_temp from inoutcount where Email=%s",(loginid))
     data2 = cursor.fetchall()
-    cursor.execute("select SR_NO,Date,Time,Inout_Status,temp from userinout where Email=%s",(loginid))
+    cursor.execute("select SR_NO,Date,Time,Inout_Status,temp,face_mask from userinout where Email=%s",(loginid))
     data3 = cursor.fetchall()
     cursor.execute("select Name,Sname from rfiduserdata where flat_no=%s",(data[0][6]))
     data4 = cursor.fetchall()
@@ -61,19 +114,33 @@ def getDashData(loginid):
 
 
 # Function to verify user using user token
-def token_required(func):
-    @wraps(func)
-    def decorated(*args, **kwargs):
-        token = request.cookies.get('sites')
-        if not token:
-            return render_template('index.html', **{'LOGIN':'LOGIN'})
-        try:
-            data = jwt.decode(token, app.config['SECRET_KEY'])
-            print(data.get('user'))
-        except:
-            return render_template('index.html', **{'LOGIN':'LOGIN'})
-        return func(data,*args, **kwargs)
-    return decorated
+# def token_required(func):
+#     @wraps(func)
+#     def decorated(*args, **kwargs):
+#         token = request.cookies.get('sites')
+#         print(token)
+#         if not token:
+#             return render_template('index.html', **{'LOGIN':'LOGIN'})
+#         try:
+#             data = decrypt_data(token)
+#             print(data.get('user'))
+#         except:
+#             return render_template('index.html', **{'LOGIN':'LOGIN'})
+#         return func(data,*args, **kwargs)
+#     return decorated
+def token_check():
+    token = request.cookies.get('sites')
+    # print(token)
+    print(token)
+    if not token:
+        return render_template('index.html', **{'LOGIN':'LOGIN'})
+    try:
+        data = decryptMessage(token)
+        # print(data.get('user'))
+        # print(data)
+        return data[0:-len(rand)]
+    except:
+        return render_template('index.html', **{'LOGIN':'LOGIN'})
 
 
 @app.route('/')
@@ -82,25 +149,27 @@ def index():
 
 
 @app.route('/home')
-@token_required
-def home(data):
-    if data.get('user')=='Admin':
+def home():
+    data = token_check()
+    print(data)
+    print(type(data))
+    if data=='Admin':
         return render_template('index.html',**{'LOGIN':'ADMIN'})
     print(data)
     connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
     cursor = connection.cursor()
-    cursor.execute("select Name from rfiduserdata where Email=%s",(data.get('user')))
+    cursor.execute("select Name from rfiduserdata where Email=%s",(data))
     name = cursor.fetchall()
     print(name[0][0])
     return render_template('index.html',**{'LOGIN':name[0][0]})
 
 
 @app.route('/Dashboard')
-@token_required
-def dashboard(data):
-    if data.get('user')=='Admin':
+def dashboard():
+    data = token_check()
+    if data=='Admin':
         return redirect(url_for('sendmembers'))
-    dashdata = getDashData(data.get('user'))
+    dashdata = getDashData(data)
     return render_template('userDashboard.html',**dashdata)
 
 # @app.route('/userinfo',methods=['GET','POST'])
@@ -124,8 +193,8 @@ def dashboard(data):
 
 
 @app.route('/userinfo',methods=['GET','POST'])
-@token_required
-def getuserInfo(data):
+def getuserInfo():
+    data = token_check()
     if request.method=='POST':
         data = request.form
         email = data['email']
@@ -133,8 +202,8 @@ def getuserInfo(data):
         return render_template('memberinfo.html',**dashdata)
 
 @app.route('/vaccStatus',methods=['GET','POST'])
-@token_required
-def vaccStatus(data):
+def vaccStatus():
+    data = token_check()
     if request.method=='POST':
         formdata = request.form
         status = formdata['approve']
@@ -167,12 +236,8 @@ def login():
         data = cursor.fetchall()
         if (len(data)==1):
             # Create JWT Token
-            token = jwt.encode(
-                {
-                    'user': loginid,
-                    'expiration': str(datetime.utcnow() + timedelta(seconds=60))
-                }, app.config['SECRET_KEY'])
-
+            token = encryptMessage(loginid)
+            print(type(token))
             dashdata = getDashData(loginid)
             response = make_response(render_template('userDashboard.html',**dashdata))
             response.set_cookie('sites',token)
@@ -183,11 +248,8 @@ def login():
             cursor.execute("select name, pass from admin where name=%s and pass=%s",(loginid,password))
             data = cursor.fetchall()
             if (len(data)==1):
-                token = jwt.encode(
-                    {
-                        'user': loginid,
-                        'expiration': str(datetime.utcnow() + timedelta(seconds=60))
-                    }, app.config['SECRET_KEY'])
+                token = encryptMessage(loginid)
+                print(type(token))
                 cursor.execute("select Name,Mname,Sname,Email,flat_no from rfiduserdata order by flat_no")
                 member = cursor.fetchall()
                 print(member)
@@ -202,18 +264,12 @@ def login():
 def editprof():
     if request.method =='POST':
         file = request.files['profile']
-        token = request.cookies.get('sites')
-        if not token:
-            return render_template('index.html', **{'LOGIN':'LOGIN'})
-        try:
-            data = jwt.decode(token, app.config['SECRET_KEY'])
-        except:
-            return render_template('index.html', **{'LOGIN':'LOGIN'})
+        data = token_check()
         connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
         cursor = connection.cursor()
-        cursor.execute("select Name from rfiduserdata where Email=%s",(data.get('user')))
+        cursor.execute("select Name from rfiduserdata where Email=%s",(data))
         Name = cursor.fetchall()
-        dashdata = getDashData(data.get('user'))
+        dashdata = getDashData(data)
         if file:
             file.filename = Name[0][0]+"."+"jpg"
             filename = secure_filename(file.filename)
@@ -230,18 +286,13 @@ def isthere(filename, search_path):
 def editcert():
     if request.method =='POST':
         file = request.files['cert']
-        token = request.cookies.get('sites')
-        if not token:
-            return render_template('index.html', **{'LOGIN':'LOGIN'})
-        try:
-            data = jwt.decode(token, app.config['SECRET_KEY'])
-        except:
-            return render_template('index.html', **{'LOGIN':'LOGIN'})
+        data = token_check()
         connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
         cursor = connection.cursor()
-        cursor.execute("select Name from rfiduserdata where Email=%s",(data.get('user')))
+        cursor.execute("select Name from rfiduserdata where Email=%s",(data))
         Name = cursor.fetchall()
-        dashdata = getDashData(data.get('user'))
+        print("data in cert: ",data)
+        dashdata = getDashData(data)
         if file:
             fnam = Name[0][0]+"."+"pdf"
             print(isthere(fnam,app.config['addresspdf']))
@@ -250,7 +301,7 @@ def editcert():
             file.filename = Name[0][0]+"toapprove"+"."+"pdf"
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['addresspdf'],filename))
-            cursor.execute("update rfiduserdata set vacCertify=%s where Email=%s",("not Approved",data.get('user')))
+            cursor.execute("update rfiduserdata set vacCertify=%s where Email=%s",("not Approved",data))
             connection.commit()
     return render_template('userDashboard.html',**dashdata)
 
@@ -258,9 +309,9 @@ def editcert():
 
 #to view all members of society
 @app.route('/members')
-@token_required
-def sendmembers(data):
-    if data.get('user')=='Admin':
+def sendmembers():
+    data = token_check()
+    if data=='Admin':
         connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
         cursor = connection.cursor()
         cursor.execute("select Name,Mname,Sname,Email,flat_no from rfiduserdata order by flat_no")
@@ -269,9 +320,9 @@ def sendmembers(data):
         return render_template('getMembers.html',**{'members':member})
 
 @app.route('/vaccinations')
-@token_required
-def vaccination(data):
-    if data.get('user')=='Admin':
+def vaccination():
+    data = token_check()
+    if data=='Admin':
         connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
         cursor = connection.cursor()
         cursor.execute("select Name,Mname,Sname,Email from rfiduserdata where vacCertify=%s order by flat_no",("not Approved"))
@@ -281,19 +332,19 @@ def vaccination(data):
         return render_template('getvacStatus.html',**{'members':member})
 
 @app.route('/inoutRecord')
-@token_required
-def inoutRecord(data):
-    if data.get('user')=='Admin':
+def inoutRecord():
+    data = token_check()
+    if data=='Admin':
         connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
         cursor = connection.cursor()
-        cursor.execute("select Email,Date,Time,Inout_Status,temp from userinout")
+        cursor.execute("select Email,Date,Time,Inout_Status,temp,face_mask from userinout")
         record = cursor.fetchall()
         return render_template('inoutRecord.html',**{'record':record})
 
 @app.route('/recordByDate',methods=['GET','POST'])
-@token_required
-def recordbyDate(data):
-    if data.get('user')=='Admin':
+def recordbyDate():
+    data = token_check()
+    if data=='Admin':
         if request.method=='POST':
             data = request.form
             date = data['date']
@@ -301,7 +352,7 @@ def recordbyDate(data):
             if (len(date)>0):
                 connection = pymysql.connect(host=ps.hostname,user=ps.dbusername,password=ps.dbpassword,db=ps.dbname)
                 cursor = connection.cursor()
-                cursor.execute("select Email,Date,Time,Inout_Status,temp from userinout where Date = %s",date)
+                cursor.execute("select Email,Date,Time,Inout_Status,temp,face_mask from userinout where Date = %s",date)
                 record = cursor.fetchall()
                 return render_template('inoutRecord.html',**{'record':record})
             else:
